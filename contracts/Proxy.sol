@@ -2,29 +2,34 @@
 
 pragma solidity ^0.8.0;
 
+import "./lib/StorageSlot.sol";
+
 contract Proxy {
-    // add implementaion contract address property
-    address public implementation;
+    // -1 to increase the uniqueness of the address
+    bytes32 private constant __IMPL_SLOT =
+        bytes32(uint256(keccak256("eip1967.proxy.implementation")) - 1);
 
     function setImplementation(address implementation_) public {
-        implementation = implementation_;
+        StorageSlot.setAddress(__IMPL_SLOT, implementation_);
     }
 
     function getImplementation() public view returns (address) {
-        return implementation;
+        return StorageSlot.getAddressAt(__IMPL_SLOT);
     }
 
-    fallback() external {
+    fallback() external {}
+
+    function _delegate(address _implAddress) internal virtual {
         assembly {
             // save call data to a specific memory slot
             // mload reads 32bytes from a specific index
             let ptr := mload(0x40)
             calldatacopy(ptr, 0, calldatasize())
-            
+
             // relay call to the proxy contract
             let result := delegatecall(
                 gas(),
-                sload(implementation.slot),
+                _implAddress,
                 ptr,
                 calldatasize(),
                 0,
