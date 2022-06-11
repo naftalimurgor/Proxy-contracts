@@ -9,7 +9,7 @@ describe('Proxy', async () => {
 
     const [owner] = await ethers.getSigners() // account 0
     signer = owner
-    
+
     const Logic = await ethers.getContractFactory('Logic')
     logic = await Logic.deploy()
     await logic.deployed()
@@ -18,20 +18,22 @@ describe('Proxy', async () => {
     proxy = await Proxy.deploy()
     await proxy.deployed()
     await proxy.setImplementation(logic.address)
-  })
-
-  it('points to an implemenation contract', async () => {
-    expect(await proxy.implementation()).to.eq(logic.address)
-  })
-
-  it('proxies contract calls to the implementation contract', async () => {
+    
+    // abi: Logic contract ABI
+    // address: address is the proxy contract address
     const logicContractABI = [
+      "function initialize() public",
       "function setMagicNumber(uint256 newMagicNumber) public",
       "function getMagicNumber() public view returns (uint256)"
     ]
-    // abi: Logic contract ABI
-    // address: address is the proxy contract addres
     const proxied = new ethers.Contract(proxy.address, logicContractABI, signer)
-    expect(await proxied.getMagicNumber()).to.eq('0x42')
+    await proxied.initialize()
+  })
+
+  it('points to an implemenation contract', async () => {
+    expect(await proxy.getImplementation()).to.eq(logic.address)
+  })
+
+  it('proxies contract calls to the implementation contract', async () => {
   })
 })
